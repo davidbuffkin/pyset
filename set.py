@@ -58,7 +58,7 @@ class Board(QWidget):
 
         self.expandBoard()
 
-        self.callback(f"initial {''.join([c for card in self.cards])}")
+        self.callback(f"initial {''.join(self.cards)}")
       
 
     def click(self):
@@ -73,7 +73,7 @@ class Board(QWidget):
                 if len(self.deck) == 0:
                     self.callback('done')
                 else:
-                    self.callback([self.cards[i] for i in choices])
+                    self.callback('set ' + ''.join([self.cards[i] for i in choices]))
                     self.makeSet(choices)
             else:
                 for i in choices:
