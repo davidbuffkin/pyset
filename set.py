@@ -1,214 +1,51 @@
 from PyQt5.QtWidgets import * 
 from PyQt5.QtGui import * 
 from PyQt5.QtCore import * 
-from random import shuffle
-from threading import Timer
+from board import Board
 import sys
-
-color = {'R' : 'red', 'G' : 'green', 'P' : 'purple'}
-shape = {'O' : 'oval', 'D' : 'diamond', 'S' : 'squiggle'}
-shade = {'F' : 'filled', 'E' : 'empty', 'L' : 'shaded'}
-
-tints = {0 : 'rgba(0, 0, 0, 0)', 1 : 'rgba(142, 232, 229, .2)', 2 : 'rgba(127, 245, 159, .2)', 3 : 'rgba(252, 123, 116, .2)'}
-
-def cardToFilename(card):
-    return 'img/' + ''.join([color[card[1]], shape[card[2]], shade[card[3]], card[0]]) + '.png'
-
-#Renders a board. Calls event(set) when a set is made or event('done') the game is done
-class Board(QWidget):
-    def __init__(self, callback):
-        super().__init__()
-        self.grid = QGridLayout()
-        self.grid.setHorizontalSpacing(10)
-        self.grid.setVerticalSpacing(10)
-        self.setLayout(self.grid)
-        self.callback = callback
-        self.cardimgs = []
-        self.cardbtns = []
-        self.chosen = [False] * 9
-        for i in range(1,4):
-            for j in range(1,4):
-                cardimg = QLabel("", self)
-                cardimg.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-                self.grid.addWidget(cardimg,i,j)
-                self.cardimgs += [cardimg]
-
-                button = QPushButton("", self)
-                button.clicked.connect(self.click)
-                button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-                self.grid.addWidget(button,i,j)
-                self.cardbtns += [button]
-                button.setStyleSheet("background-color : rgba(0, 0, 0, 0);"
-                                     "border-color: rgba(0, 0, 0, 0);")
-        
-        self.deck = []
-        for n in "123":
-            for c in "RGP":
-                for s in "OSD":
-                    for sh in "FLE":
-                        self.deck += [''.join([n,c,s,sh])]
-        
-        shuffle(self.deck)
-        self.cards = []
-        for i in range(9):
-            c = self.deck.pop()
-
-            self.setCardImg(i, c)
-            self.cards += [c]
-
-        self.expandBoard()
-
-        self.callback(f"initial {''.join(self.cards)}")
-      
-
-    def click(self):
-        n = self.cardbtns.index(self.sender()) 
-        self.chosen[n] = not self.chosen[n]
-        if(sum(self.chosen) == 3):
-            choices = [i for i in range(len(self.cards)) if self.chosen[i]]
-            self.chosen = [False] * len(self.cards)
-            if self.isSet(*[self.cards[i] for i in choices]):
-                for i in choices:
-                    self.setTint(i, 0)
-                if len(self.deck) == 0:
-                    self.callback('done')
-                else:
-                    self.callback('set ' + ''.join([self.cards[i] for i in choices]))
-                    self.makeSet(choices)
-            else:
-                for i in choices:
-                    self.setTint(i, 0)
-        else:
-            self.setTint(n, 1 if self.chosen[n] else 0)
-
-    def isSet(self, c1, c2, c3):
-        for i in range(4):
-            if c1[i] == c2[i] == c3[i]:
-                continue
-            if c1[i] == c2[i] or c1[i] == c3[i] or c2[i] == c3[i]:
-                return False
-        return True
-
-    def hasSet(self, cardsToCheck = None, n = None):
-        if cardsToCheck == None: cardsToCheck = self.cards
-        if n == None: n = len(self.cards)
-        for i in range(n):
-            for j in range(i+1, n):
-                for k in range(j+1, n):
-                    if self.isSet(cardsToCheck[i], cardsToCheck[j], cardsToCheck[k]):
-                        return True
-        return False
-
-    def shrinkBoard(self, removals):
-
-        for btn in self.cardbtns[-3:]:
-            self.grid.removeWidget(btn)
-            btn.deleteLater()
-            btn = None
-        for img in self.cardimgs[-3:]:
-            self.grid.removeWidget(img)
-            img.deleteLater()
-            img = None
-
-        self.cardbtns = self.cardbtns[:-3]
-        self.cardimgs = self.cardimgs[:-3]  
-        
-        for i in removals[::-1]:
-            del self.cards[i]
-        
-        self.chosen = [False] * len(self.cards)
-
-        self.resetCardImgs()
-
-        self.callback("shrink")
-
-    def expandBoard(self):
-        
-        for j in range(1,4):
-            cardimg = QLabel("", self)
-            cardimg.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-            self.grid.addWidget(cardimg,len(self.cards) // 3 + 1,j)
-            self.cardimgs += [cardimg]
-
-            button = QPushButton("", self)
-            button.clicked.connect(self.click)
-            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-            self.grid.addWidget(button,len(self.cards) // 3 + 1,j)
-            self.cardbtns += [button]
-            button.setStyleSheet("background-color : rgba(0, 0, 0, 0);"
-                                "border-color: rgba(0, 0, 0, 0);")
-        for i in range(len(self.cardimgs) - 3, len(self.cardimgs)):
-            c = self.deck.pop()
-            self.setCardImg(i, c)
-            self.cards += [c]
-        self.chosen += [False] * 3
-        
-        self.callback('expand')
-
-        if not self.hasSet():
-            self.expandBoard()
-        
-        
-
-    
-    def makeSet(self, choices):
-        if len(self.cards) > 9:
-            remaining = [self.cards[i] for i in range(len(self.cards)) if i not in choices]
-            if self.hasSet(cardsToCheck = remaining, n = len(remaining)):
-                self.shrinkBoard(choices)
-            else:
-                for i in choices:
-                    self.cards[i] = self.deck.pop()
-                    self.setCardImg(i, self.cards[i])
-                if not self.hasSet():
-                    self.expandBoard()
-        else:
-            for i in choices:
-                self.cards[i] = self.deck.pop()
-                self.setCardImg(i, self.cards[i])
-            if not self.hasSet():
-                self.expandBoard()
-
-    def resetCardImgs(self):
-        for i, c in enumerate(self.cards):
-            self.setCardImg(i, c)
-
-    def setCardImg(self, i, card):
-        self.cardimgs[i].setStyleSheet(f'border-image : url({cardToFilename(card)});')
-
-    def zeroTint(self):
-        for i in range(len(self.cardbtns)):
-            self.setTint(i, 0)
-    
-    # 0 is none, 1 is blue, 2 is green, 3 is red
-    def setTint(self, i, tint):
-        self.cardbtns[i].setStyleSheet(f"background-color : {tints[tint]};")
-
 
 class SetGameWindow(QWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Set")
-        self.x = 800
-        self.y = 400
-        self.setGeometry(100, 100, self.x, self.y)
-  
-        self.board = Board(self.callback)
-
-        self.grid = QGridLayout()
-        self.grid.addWidget(self.board, 0, 0)
-        self.setLayout(self.grid)
+        self.initLayout()
+        
         self.show()
+    
+    def initLayout(self):
+        self.board = Board(self.callback, self)
+        self.hy = 150
+        self.bx = 800
+        self.by = int(400 * len(self.board.cards) / 9)
+        self.setGeometry(100, 100, self.bx, self.by + self.hy)
+        self.board.resize(800, self.by)
+        self.board.move(0, self.hy)
+        self.board.hide()
+
+        self.startButton = QPushButton("Start", self)
+        self.btnx = 130
+        self.btny = 60
+        self.startButton.setGeometry(self.bx//2 - self.btnx//2, self.hy//2 - self.btny//2, self.btnx, self.btny)
+        self.startButton.released.connect(self.start)
+
+    def fixSize(self):
+        self.setGeometry(100, 100, self.bx, self.by + self.hy)
+        self.board.resize(self.bx, self.by)
+
+    def start(self):
+        self.board.show()
+        QTimer.singleShot(25, self.startButton.hide)
     
     def callback(self, m):
         print(m)
-        if m == "expand":
-            self.y += 400//3
-            self.setGeometry(100, 100, self.x, self.y)
-        elif m == "shrink":
-            self.y -= 400//3
-            self.setGeometry(100, 100, self.x, self.y)
+        toks = m.split(" ")
+        if toks[0] == "expand":
+            self.by += 400//3
+            self.fixSize()
+        elif toks[0] == "shrink":
+            self.by -= 400//3
+            self.fixSize()
 
 
 
@@ -217,5 +54,6 @@ class SetGameWindow(QWidget):
 if __name__ == "__main__":
 
     App = QApplication(sys.argv)
+    #App.setStyle("macintosh")
     window = SetGameWindow()
     sys.exit(App.exec())
