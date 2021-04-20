@@ -77,7 +77,7 @@ class SetGameWindow(QWidget):
         self.timelabel.setText(f"{time // 60:02}:{time % 60:02}")
     
     def callback(self, m):
-        print(m)
+        
         toks = m.split(" ")
         if toks[0] == "expand":
             self.by += 400//3
