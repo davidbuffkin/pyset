@@ -62,10 +62,11 @@ class Board(QWidget):
            self.expandBoard(True)
       
 
-    def click(self):
+    def click(self, n = None):
         if self.waiting:
             return
-        n = self.cardbtns.index(self.sender()) 
+        if n is False:
+            n = self.cardbtns.index(self.sender()) 
         self.chosen[n] = not self.chosen[n]
         if(sum(self.chosen) == 3):
             self.waiting = True
@@ -87,6 +88,7 @@ class Board(QWidget):
                 
         else:
             self.setTint(n, 1 if self.chosen[n] else 0)
+        
 
     def isSet(self, c1, c2, c3):
         for i in range(4):
@@ -191,3 +193,5 @@ class Board(QWidget):
     # 0 is none, 1 is blue, 2 is green, 3 is red
     def setTint(self, i, tint):
         self.cardbtns[i].setStyleSheet(f"background-color : {tints[tint]};")
+
+        
