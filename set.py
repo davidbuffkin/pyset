@@ -45,6 +45,11 @@ class SetGameWindow(QWidget):
         self.startButton.setGeometry(self.bx//2 - self.btnx//2, self.hy//2 - self.btny//2, self.btnx, self.btny)
         self.startButton.released.connect(self.start)
 
+        self.pauseButton = QPushButton("Pause", self)
+        self.pauseButton.setGeometry(600, self.hy//2 - 18, 130, 60)
+        self.pauseButton.released.connect(self.pause)
+        self.pauseButton.hide()
+
         self.timelabel = QLabel('00:00', self)
         self.timelabel.setGeometry(self.bx//2 - 50, 48, 100, 50)
         self.timelabel.setFont(QFont('Arial', 40))
@@ -65,6 +70,20 @@ class SetGameWindow(QWidget):
         self.quitButton.hide()
         self.quitButton.released.connect(self.close)
 
+    def pause(self):
+        self.playing = not self.playing
+        
+        if not self.playing:
+            self.timer.stop()
+            QTimer.singleShot(25, self.board.hide)
+            QTimer.singleShot(25, lambda: self.pauseButton.setText('Resume'))
+            self.pauseTime = QDateTime.currentSecsSinceEpoch()
+        else:
+            self.timer.start()
+            self.startTime += QDateTime.currentSecsSinceEpoch() - self.pauseTime
+            QTimer.singleShot(25, self.board.show)
+            QTimer.singleShot(25, lambda: self.pauseButton.setText('Pause'))
+
 
     def fixSize(self):
         self.setGeometry(100, 100, self.bx, self.by + self.hy)
@@ -75,6 +94,7 @@ class SetGameWindow(QWidget):
         QTimer.singleShot(25, self.startButton.hide)
         QTimer.singleShot(25, self.timelabel.show)
         QTimer.singleShot(25, self.logbox.hide)
+        QTimer.singleShot(25, self.pauseButton.show)
         self.numlabel.setText(f"{self.n} cards left")
         self.numlabel.show()
         self.startTime = QDateTime.currentSecsSinceEpoch()
@@ -107,7 +127,7 @@ class SetGameWindow(QWidget):
         else:
             self.gameLog += f"{self.getTime()} {m}\n"
 
-        if toks[0] == 'done':
+        if toks[-1] == 'done':
             QTimer.singleShot(500, self.done)
             self.log()
 
@@ -127,6 +147,7 @@ class SetGameWindow(QWidget):
         self.timer.stop()
         self.againButton.show()
         self.quitButton.show()
+        QTimer.singleShot(25, self.pauseButton.hide)
         self.numlabel.setText("You Won!")
     
     def reset(self):

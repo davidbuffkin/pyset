@@ -51,6 +51,7 @@ class Board(QWidget):
                         self.deck += [''.join([n,c,s,sh])]
         
         shuffle(self.deck)
+        #self.deck = self.deck[-15:]
         self.cards = []
         for i in range(12):
             c = self.deck.pop()
@@ -79,7 +80,8 @@ class Board(QWidget):
                 for i in choices:
                     self.setTint(i, 2)
                 if len(self.deck) == 0:
-                    self.done()
+                    QTimer.singleShot(500, self.done)
+                    self.callback('set ' + ''.join([self.cards[i] for i in choices]) + ' done')
                 else:
                     QTimer.singleShot(500, self.zeroTint)
                     QTimer.singleShot(500, lambda: self.makeSet(choices))
@@ -124,7 +126,6 @@ class Board(QWidget):
         for i, btn in enumerate(self.cardbtns):
             r,g,b = rainbow(i / len(self.cardbtns))
             btn.setStyleSheet(f"background-color : rgba({int(r)},{int(g)},{int(b)},.2);")
-        self.callback('done')
 
     def shrinkBoard(self, removals):
 
@@ -150,9 +151,11 @@ class Board(QWidget):
         #self.callback("shrink")
 
     def expandBoard(self, suppress=False):
-        if len(self.cards) == 0 and not self.hasSet():
+        if len(self.cards) == 0:
+            self.callback('done')
             self.done()
             return
+        
         
         for j in range(1,4):
             cardimg = QLabel("", self)
