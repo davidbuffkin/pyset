@@ -3,6 +3,10 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import * 
 from board import Board
 import sys
+from os.path import dirname, join, exists
+from os import mkdir
+
+direc = dirname(__file__)
 
 class SetGameWindow(QWidget):
     def __init__(self):
@@ -21,6 +25,11 @@ class SetGameWindow(QWidget):
         self.playing = False
     
     def initLayout(self):
+        self.logbox = QCheckBox('Log Game', self)
+        self.logbox.setGeometry(590, 40, 150, 40)
+        #self.logbox.setChecked(True)
+        self.gameLog = ''
+
         self.board = Board(self.callback, self)
         self.hy = 120
         self.bx = 800
@@ -65,19 +74,21 @@ class SetGameWindow(QWidget):
         self.board.show()
         QTimer.singleShot(25, self.startButton.hide)
         QTimer.singleShot(25, self.timelabel.show)
+        QTimer.singleShot(25, self.logbox.hide)
         self.numlabel.setText(f"{self.n} cards left")
         self.numlabel.show()
         self.startTime = QDateTime.currentSecsSinceEpoch()
         self.timer.start(1000)
         self.playing = True
 
+    def getTime(self):
+        return QDateTime.currentSecsSinceEpoch() - self.startTime
 
     def showTime(self):
-        time=QDateTime.currentSecsSinceEpoch() - self.startTime
+        time = self.getTime()
         self.timelabel.setText(f"{time // 60:02}:{time % 60:02}")
     
     def callback(self, m):
-        
         toks = m.split(" ")
         if toks[0] == "expand":
             self.by += 400//3
@@ -90,8 +101,24 @@ class SetGameWindow(QWidget):
             self.n -= 3
             self.numlabel.setText(f"{self.n} cards left")
 
+        if toks[0] == 'initial':
+            self.gameLog += f"0 {m}\n"
+        else:
+            self.gameLog += f"{self.getTime()} {m}\n"
+
         if toks[0] == 'done':
             QTimer.singleShot(500, self.done)
+            self.log()
+            
+    def log(self):
+        if not exists(join(direc, 'logs')):
+            mkdir(join(direc, 'logs'))
+        i = 1
+        while(exists(join(direc, f'logs/pysetgame{i}.txt'))): i += 1
+        with open(join(direc, f'logs/pysetgame{i}.txt'), 'w') as writer:
+            writer.write(self.gameLog)
+        
+        
     
     def done(self):
         self.playing = False
@@ -102,8 +129,11 @@ class SetGameWindow(QWidget):
     
     def reset(self):
         #This is pretty bad but ho hum
+        log = self.logbox.isChecked()
         self.close()
         self.__init__()
+        self.logbox.setChecked(log)
+        
 
 
     def keyPressEvent(self, event):
@@ -121,7 +151,6 @@ class SetGameWindow(QWidget):
 if __name__ == "__main__":
 
     App = QApplication(sys.argv)
-    #App.setStyle("macintosh")
-    App.setWindowIcon(QIcon('img/icon.png'))
+    App.setWindowIcon(QIcon(join(direc, 'img/icon.png')))
     window = SetGameWindow()
     sys.exit(App.exec())

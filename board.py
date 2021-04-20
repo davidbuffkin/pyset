@@ -2,15 +2,17 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import * 
 from PyQt5.QtCore import * 
 from random import shuffle
+from os.path import dirname, join
 
 color = {'R' : 'red', 'G' : 'green', 'P' : 'purple'}
 shape = {'O' : 'oval', 'D' : 'diamond', 'S' : 'squiggle'}
 shade = {'F' : 'filled', 'E' : 'empty', 'L' : 'shaded'}
 
 tints = {0 : 'rgba(0, 0, 0, 0)', 1 : 'rgba(142, 232, 229, .2)', 2 : 'rgba(127, 245, 159, .2)', 3 : 'rgba(252, 123, 116, .2)'}
+direc = dirname(__file__)
 
 def cardToFilename(card):
-    return 'img/' + ''.join([color[card[1]], shape[card[2]], shade[card[3]], card[0]]) + '.png'
+    return join(direc, f'img/{"".join([color[card[1]], shape[card[2]], shade[card[3]], card[0]])}.png')
 
 #Renders a board. Calls event(set) when a set is made or event('done') the game is done
 class Board(QWidget):
@@ -84,6 +86,7 @@ class Board(QWidget):
             else:
                 for i in choices:
                     self.setTint(i, 3)
+                self.callback('misset ' + ''.join([self.cards[i] for i in choices]))
                 QTimer.singleShot(500, self.zeroTint)
                 
         else:
