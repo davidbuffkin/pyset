@@ -96,6 +96,7 @@ class SetGameWindow(QWidget):
         elif toks[0] == "shrink":
             self.by -= 400//3
             self.fixSize()
+            self.n += 3
         
         if toks[0] in {'expand', 'set'}:
             self.n -= 3
