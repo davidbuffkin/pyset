@@ -69,6 +69,7 @@ class Board(QWidget):
             return
         if n is False:
             n = self.cardbtns.index(self.sender()) 
+
         self.chosen[n] = not self.chosen[n]
         if(sum(self.chosen) == 3):
             self.waiting = True
@@ -77,11 +78,10 @@ class Board(QWidget):
             if self.isSet(*[self.cards[i] for i in choices]):
                 for i in choices:
                     self.setTint(i, 2)
-                QTimer.singleShot(500, self.zeroTint)
                 if len(self.deck) == 0:
-                    self.callback('done')
+                    self.done()
                 else:
-                    self.callback('set ' + ''.join([self.cards[i] for i in choices]))
+                    QTimer.singleShot(500, self.zeroTint)
                     QTimer.singleShot(500, lambda: self.makeSet(choices))
             else:
                 for i in choices:
@@ -111,6 +111,21 @@ class Board(QWidget):
                         return True
         return False
 
+    def done(self):
+        #rainbow!
+        def rainbow(v):
+            v *= 4
+            x = int(v)
+            y = v - x
+            r = 255 if x == 0 else (255 - y if x == 1 else 0)
+            g = y if x == 0 else (255 if x < 4 else 0)
+            b = 0 if x in [0,1] else (y if x == 2 else 255)
+            return r, g, b
+        for i, btn in enumerate(self.cardbtns):
+            r,g,b = rainbow(i / len(self.cardbtns))
+            btn.setStyleSheet(f"background-color : rgba({int(r)},{int(g)},{int(b)},.2);")
+        self.callback('done')
+
     def shrinkBoard(self, removals):
 
         for btn in self.cardbtns[-3:]:
@@ -132,9 +147,12 @@ class Board(QWidget):
 
         self.resetCardImgs()
 
-        self.callback("shrink")
+        #self.callback("shrink")
 
     def expandBoard(self, suppress=False):
+        if len(self.cards) == 0 and not self.hasSet():
+            self.done()
+            return
         
         for j in range(1,4):
             cardimg = QLabel("", self)
@@ -164,20 +182,24 @@ class Board(QWidget):
 
     
     def makeSet(self, choices):
+        s = 'set ' + ''.join([self.cards[i] for i in choices])
         if len(self.cards) > 12:
             remaining = [self.cards[i] for i in range(len(self.cards)) if i not in choices]
             if self.hasSet(cardsToCheck = remaining, n = len(remaining)):
+                self.callback(s + " shrink")
                 self.shrinkBoard(choices)
             else:
                 for i in choices:
                     self.cards[i] = self.deck.pop()
                     self.setCardImg(i, self.cards[i])
+                self.callback(s +' > ' + ''.join([self.cards[i] for i in choices]))
                 if not self.hasSet():
                     self.expandBoard()
         else:
             for i in choices:
                 self.cards[i] = self.deck.pop()
                 self.setCardImg(i, self.cards[i])
+            self.callback(s + ' > ' + ''.join([self.cards[i] for i in choices]))
             if not self.hasSet():
                 self.expandBoard()
 

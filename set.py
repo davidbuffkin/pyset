@@ -93,7 +93,7 @@ class SetGameWindow(QWidget):
         if toks[0] == "expand":
             self.by += 400//3
             self.fixSize()
-        elif toks[0] == "shrink":
+        elif toks[-1] == "shrink":
             self.by -= 400//3
             self.fixSize()
             self.n += 3
@@ -110,6 +110,7 @@ class SetGameWindow(QWidget):
         if toks[0] == 'done':
             QTimer.singleShot(500, self.done)
             self.log()
+
             
     def log(self):
         if not exists(join(direc, 'logs')):
