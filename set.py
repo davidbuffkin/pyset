@@ -23,6 +23,7 @@ class SetGameWindow(QWidget):
         self.timer=QTimer()
         self.timer.timeout.connect(self.showTime)
         self.playing = False
+        self.paused = False
     
     def initLayout(self):
         self.logbox = QCheckBox('Log Game', self)
@@ -78,11 +79,13 @@ class SetGameWindow(QWidget):
             QTimer.singleShot(25, self.board.hide)
             QTimer.singleShot(25, lambda: self.pauseButton.setText('Resume'))
             self.pauseTime = QDateTime.currentSecsSinceEpoch()
+            self.paused = True
         else:
             self.timer.start()
             self.startTime += QDateTime.currentSecsSinceEpoch() - self.pauseTime
             QTimer.singleShot(25, self.board.show)
             QTimer.singleShot(25, lambda: self.pauseButton.setText('Pause'))
+            self.paused = False
 
 
     def fixSize(self):
@@ -120,7 +123,7 @@ class SetGameWindow(QWidget):
         
         if toks[0] in {'expand', 'set'}:
             self.n -= 3
-            self.numlabel.setText(f"{self.n} cards left")
+            self.numlabel.setText(f"{max(0,self.n)} cards left")
 
         if toks[0] == 'initial':
             self.gameLog += f"0 {m}\n"
@@ -160,7 +163,7 @@ class SetGameWindow(QWidget):
 
 
     def keyPressEvent(self, event):
-        if not self.playing:
+        if not self.playing and not self.paused:
             return
         try:
             self.board.click(n=[Qt.Key_1, Qt.Key_2, Qt.Key_3, 
@@ -168,8 +171,8 @@ class SetGameWindow(QWidget):
                                 Qt.Key_A, Qt.Key_S, Qt.Key_D, 
                                 Qt.Key_Z, Qt.Key_X, Qt.Key_C,].index(event.key()))
         except Exception:
-            pass
-  
+            if event.key() == Qt.Key_Space:
+                self.pause()
 
 if __name__ == "__main__":
 
