@@ -151,7 +151,7 @@ class Board(QWidget):
         #self.callback("shrink")
 
     def expandBoard(self, suppress=False):
-        if len(self.cards) == 0:
+        if len(self.deck) == 0:
             self.callback('done')
             self.done()
             return
