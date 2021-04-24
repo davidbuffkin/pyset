@@ -12,7 +12,7 @@ tints = {0 : 'rgba(0, 0, 0, 0)', 1 : 'rgba(142, 232, 229, .2)', 2 : 'rgba(127, 2
 direc = dirname(__file__)
 
 def cardToFilename(card):
-    return join(direc, f'img/{"".join([color[card[1]], shape[card[2]], shade[card[3]], card[0]])}.png')
+    return join(direc, 'img',f'{"".join([color[card[1]], shape[card[2]], shade[card[3]], card[0]])}.png')
 
 #Renders a board. Calls event(set) when a set is made or event('done') the game is done
 class Board(QWidget):

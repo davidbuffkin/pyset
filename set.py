@@ -24,11 +24,14 @@ class SetGameWindow(QWidget):
         self.timer.timeout.connect(self.showTime)
         self.playing = False
         self.paused = False
+        self.started = False
+        self.donev = False
     
     def initLayout(self):
         self.logbox = QCheckBox('Log Game', self)
         self.logbox.setGeometry(590, 40, 150, 40)
-        #self.logbox.setChecked(True)
+        if len(sys.argv) > 1 and sys.argv[-1] == '-l':
+            self.logbox.setChecked(True)
         self.gameLog = ''
 
         self.board = Board(self.callback, self)
@@ -60,6 +63,16 @@ class SetGameWindow(QWidget):
         self.numlabel.setGeometry(50, 48, 200, 50)
         self.numlabel.setFont(QFont('Arial', 30))
         self.numlabel.hide()
+
+        self.inslabel = QLabel('Standard hotkeys (123,qwe,asd,zxc) are supported.\nSpace to Play, Pause/Resume, and Restart.\nEsc to quit.', self)
+        self.inslabel.setGeometry(20, 00, 350, 100)
+        self.inslabel.setFont(QFont('Arial', 13))
+
+        self.loglabel = QLabel('Logging', self)
+        self.loglabel.setGeometry(110, 14, 200, 50)
+        self.loglabel.setStyleSheet("color: gray;")
+        self.loglabel.setFont(QFont('Arial', 15))
+        self.loglabel.hide()
 
         self.againButton = QPushButton("Play Again!", self)
         self.againButton.setGeometry(590, 20, 150, 40)
@@ -100,9 +113,13 @@ class SetGameWindow(QWidget):
         QTimer.singleShot(25, self.pauseButton.show)
         self.numlabel.setText(f"{self.n} cards left")
         self.numlabel.show()
+        self.inslabel.hide()
+        if self.logbox.isChecked():
+            self.loglabel.show()
         self.startTime = QDateTime.currentSecsSinceEpoch()
         self.timer.start(1000)
         self.playing = True
+        self.started = True
 
     def getTime(self):
         return QDateTime.currentSecsSinceEpoch() - self.startTime
@@ -132,20 +149,22 @@ class SetGameWindow(QWidget):
 
         if toks[-1] == 'done':
             QTimer.singleShot(500, self.done)
-            self.log()
+            if self.logbox.isChecked():
+                self.log()
 
             
     def log(self):
         if not exists(join(direc, 'logs')):
             mkdir(join(direc, 'logs'))
         i = 1
-        while(exists(join(direc, f'logs/pysetgame{i}.txt'))): i += 1
-        with open(join(direc, f'logs/pysetgame{i}.txt'), 'w') as writer:
+        while(exists(join(direc, 'logs', f'pysetgame{i}.txt'))): i += 1
+        with open(join(direc, 'logs', f'pysetgame{i}.txt'), 'w') as writer:
             writer.write(self.gameLog)
         
         
     
     def done(self):
+        self.donev = True
         self.playing = False
         self.timer.stop()
         self.againButton.show()
@@ -163,6 +182,19 @@ class SetGameWindow(QWidget):
 
 
     def keyPressEvent(self, event):
+
+        if event.key() == Qt.Key_Space:
+            if self.playing or self.paused:
+                self.pause()
+            elif self.donev:
+                self.reset()
+            elif not self.started:
+                self.start()
+            return
+                
+        if event.key() == Qt.Key_Escape:
+            self.close()
+
         if not self.playing and not self.paused:
             return
         try:
@@ -171,12 +203,11 @@ class SetGameWindow(QWidget):
                                 Qt.Key_A, Qt.Key_S, Qt.Key_D, 
                                 Qt.Key_Z, Qt.Key_X, Qt.Key_C,].index(event.key()))
         except Exception:
-            if event.key() == Qt.Key_Space:
-                self.pause()
+            pass
 
 if __name__ == "__main__":
 
     App = QApplication(sys.argv)
-    App.setWindowIcon(QIcon(join(direc, 'img/icon.png')))
+    App.setWindowIcon(QIcon(join(direc, 'img', 'icon.png')))
     window = SetGameWindow()
     sys.exit(App.exec())
