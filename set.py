@@ -113,7 +113,7 @@ class SetGameWindow(QWidget):
         QTimer.singleShot(25, self.pauseButton.show)
         self.numlabel.setText(f"{self.n} cards left")
         self.numlabel.show()
-        self.inslabel.hide()
+        QTimer.singleShot(25, self.inslabel.hide)
         if self.logbox.isChecked():
             self.loglabel.show()
         self.startTime = QDateTime.currentSecsSinceEpoch()
